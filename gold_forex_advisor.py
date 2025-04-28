@@ -14,7 +14,7 @@ st_autorefresh(interval=3000, limit=None, key="datarefresh")
 if "last_advice" not in st.session_state:
     st.session_state.last_advice = None
 
-# ─── 抓資料 & 計算 MA ───────────────────────────────
+# ─── 抓資料 & 計算 MA（快取 60 秒） ────────────────────
 @st.cache_data(ttl=60)
 def fetch_data():
     df = yf.download("GC=F", period="1d", interval="1m", progress=False)
@@ -28,15 +28,15 @@ def fetch_data():
 data = fetch_data()
 
 # ─── 資料尚未準備好 ─────────────────────────────────
-if data.empty or data["MA60"].isna().iat[-1]:
+if data.empty or pd.isna(data["MA60"].iloc[-1]):
     st.warning("⏳ 資料載入中/尚未初始化，請稍候…")
     st.stop()
 
 # ─── 明確取出「最後一筆」單一 float ─────────────────
-lp     = data["Close"].iat[-1]
-ma5    = data["MA5"].iat[-1]
-ma20   = data["MA20"].iat[-1]
-ma60   = data["MA60"].iat[-1]
+lp   = data["Close"].iloc[-1]
+ma5  = data["MA5"].iloc[-1]
+ma20 = data["MA20"].iloc[-1]
+ma60 = data["MA60"].iloc[-1]
 
 # ─── 再次防呆：如果任一為 NaN ────────────────────────
 if any(pd.isna(v) for v in (lp, ma5, ma20, ma60)):
@@ -57,6 +57,7 @@ last = st.session_state.last_advice
 if last and last != advice:
     if ("做多" in last and "做空" in advice) or ("做空" in last and "做多" in advice):
         flip_alert = "⚡ **趨勢翻轉提醒！**"
+
 st.session_state.last_advice = advice
 
 # ─── 顯示畫面 ───────────────────────────────────────
