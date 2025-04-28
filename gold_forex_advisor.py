@@ -1,7 +1,6 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import numpy as np
 import time
 
 # 頁面設定
@@ -33,23 +32,29 @@ def main():
             time.sleep(3)
             continue
 
+        # 抓最新一筆資料
         try:
             latest_price = data['Close'].iloc[-1]
             ma5 = data['MA5'].iloc[-1]
             ma20 = data['MA20'].iloc[-1]
             ma60 = data['MA60'].iloc[-1]
         except:
-            placeholder.warning("⏳ 正在等待新資料...")
+            placeholder.warning("⏳ 等待數據生成中...")
             time.sleep(3)
             continue
 
-        # 防止取到NaN或Series問題
-        if any([pd.isna(latest_price), pd.isna(ma5), pd.isna(ma20), pd.isna(ma60)]):
-            placeholder.warning("⏳ 資料未完成，稍候更新...")
+        # 防止 NaN 值（單個判斷）
+        if any([
+            pd.isna(latest_price),
+            pd.isna(ma5),
+            pd.isna(ma20),
+            pd.isna(ma60)
+        ]):
+            placeholder.warning("⏳ 數據未完整，稍候刷新...")
             time.sleep(3)
             continue
 
-        # 多空判斷
+        # 多空建議判斷
         if latest_price > ma5 > ma20 > ma60:
             advice = "📈 做多"
         elif latest_price < ma5 < ma20 < ma60:
@@ -57,7 +62,7 @@ def main():
         else:
             advice = "⚖️ 觀望中"
 
-        # 趨勢翻轉判斷
+        # 趨勢翻轉提醒
         flip_alert = ""
         if st.session_state.last_advice and (st.session_state.last_advice != advice):
             if ("做多" in st.session_state.last_advice and "做空" in advice) or \
