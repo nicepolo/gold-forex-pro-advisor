@@ -28,7 +28,7 @@ def fetch_data():
 while True:
     data = fetch_data()
 
-    if data.empty or pd.isna(data['MA60'].iloc[-1]):
+if data.empty or pd.isna(data['MA60'].iloc[-1]):
         placeholder.warning("⏳ 正在載入資料，請稍候...")
         time.sleep(3)
         continue
@@ -37,6 +37,28 @@ while True:
     ma5 = data['MA5'].iloc[-1]
     ma20 = data['MA20'].iloc[-1]
     ma60 = data['MA60'].iloc[-1]
+
+if pd.notna(ma5) and pd.notna(ma20) and pd.notna(ma60):
+        if latest_price > ma5 > ma20 > ma60:
+            advice = "📈 **建議：做多 ✅**"
+        elif latest_price < ma5 < ma20 < ma60:
+            advice = "📉 **建議：做空 🔻**"
+        else:
+            advice = "⚖️ **建議：觀望中**"
+    else:
+        advice = "⏳ 數據初始化中，請稍候..."
+
+    with placeholder.container():
+        st.metric("🌟 最新金價 (XAU/USD)", f"{latest_price:.2f} USD")
+        st.markdown("### 📊 移動平均線參考")
+        st.markdown(f"- **MA5：** {ma5:.2f}")
+        st.markdown(f"- **MA20：** {ma20:.2f}")
+        st.markdown(f"- **MA60：** {ma60:.2f}")
+        st.markdown("---")
+        st.markdown(f"## 🚨 {advice}")
+        st.caption("⏱️ 每3秒自動刷新一次數據")
+
+    time.sleep(3)
 
     # 判斷方向
     if latest_price > ma5 > ma20 > ma60:
