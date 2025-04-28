@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
 import pandas as pd
+import numpy as np
 
 st.set_page_config(page_title="黃金即時多空建議系統", page_icon="💹", layout="centered")
 
@@ -39,7 +40,7 @@ def fetch_data():
 def main():
     data = fetch_data()
 
-    if data.empty or pd.isna(data['MA60'].iloc[-1]):
+    if data.empty:
         st.warning("⏳ 正在載入資料，請稍候...")
         return
 
@@ -48,15 +49,19 @@ def main():
     ma20 = data['MA20'].iloc[-1]
     ma60 = data['MA60'].iloc[-1]
 
-    advice = "⏳ 數據初始化中，請稍候..."  # 預設訊息
+    # 正確檢查：如果有一個是NaN就return
+    if np.isnan(latest_price) or np.isnan(ma5) or np.isnan(ma20) or np.isnan(ma60):
+        st.warning("⏳ 正在載入資料，請稍候...")
+        return
 
-    if pd.notna(latest_price) and pd.notna(ma5) and pd.notna(ma20) and pd.notna(ma60):
-        if (latest_price > ma5) and (ma5 > ma20) and (ma20 > ma60):
-            advice = "📈 **建議：做多 ✅**"
-        elif (latest_price < ma5) and (ma5 < ma20) and (ma20 < ma60):
-            advice = "📉 **建議：做空 🔻**"
-        else:
-            advice = "⚖️ **建議：觀望中**"
+    advice = "⏳ 數據初始化中，請稍候..."
+
+    if (latest_price > ma5) and (ma5 > ma20) and (ma20 > ma60):
+        advice = "📈 **建議：做多 ✅**"
+    elif (latest_price < ma5) and (ma5 < ma20) and (ma20 < ma60):
+        advice = "📉 **建議：做空 🔻**"
+    else:
+        advice = "⚖️ **建議：觀望中**"
 
     st.markdown(
         f"""
