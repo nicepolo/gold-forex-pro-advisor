@@ -42,7 +42,7 @@ def main():
             time.sleep(3)
             continue
 
-        # 檢查是否有NaN
+        # 檢查NaN
         if any([
             pd.isna(lp),
             pd.isna(ma5_v),
@@ -53,7 +53,7 @@ def main():
             time.sleep(3)
             continue
 
-        # 多空建議判斷（這次用單一數字比較）
+        # 多空建議判斷（這次正確使用單一數字比較）
         if lp > ma5_v > ma20_v > ma60_v:
             advice = "📈 做多"
         elif lp < ma5_v < ma20_v < ma60_v:
