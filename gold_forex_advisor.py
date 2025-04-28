@@ -1,12 +1,13 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
+
 import time
 
 # 頁面設定
 st.set_page_config(page_title="黃金即時多空建議系統", page_icon="💹", layout="centered")
 
-# 背景設定（淡漸層）
+# 背景設定
 page_bg_img = """
 <style>
 [data-testid="stAppViewContainer"] {
@@ -19,7 +20,7 @@ h1, h2, h3, h4, h5, h6, p {
 """
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# 標題
+# 頁面標題
 st.markdown(
     """
     <div style='text-align: center; padding: 10px; background-color: #fff8dc; border-radius: 12px;'>
@@ -30,9 +31,13 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# 初始化 session state
+if 'run' not in st.session_state:
+    st.session_state.run = True
+
 placeholder = st.empty()
 
-# 抓取資料
+# 主程序
 def fetch_data():
     data = yf.download('GC=F', period='1d', interval='1m', progress=False)
     data['MA5'] = data['Close'].rolling(window=5).mean()
@@ -40,21 +45,19 @@ def fetch_data():
     data['MA60'] = data['Close'].rolling(window=60).mean()
     return data
 
-# 主迴圈
-while True:
+# 主流程
+def main():
     data = fetch_data()
 
     if data.empty or pd.isna(data['MA60'].iloc[-1]):
         placeholder.warning("⏳ 正在載入資料，請稍候...")
-        time.sleep(3)
-        continue
+        return
 
     latest_price = data['Close'].iloc[-1]
     ma5 = data['MA5'].iloc[-1]
     ma20 = data['MA20'].iloc[-1]
     ma60 = data['MA60'].iloc[-1]
 
-    # 防呆檢查，三個均線都不是NaN才能進行判斷
     if pd.notna(ma5) and pd.notna(ma20) and pd.notna(ma60):
         if latest_price > ma5 > ma20 > ma60:
             advice = "📈 **建議：做多 ✅**"
@@ -65,7 +68,6 @@ while True:
     else:
         advice = "⏳ 數據初始化中，請稍候..."
 
-    # 畫面顯示
     with placeholder.container():
         st.markdown(
             f"""
@@ -93,4 +95,8 @@ while True:
         )
         st.caption("⏱️ 每3秒自動刷新一次數據")
 
+# 重複刷新機制
+while st.session_state.run:
+    main()
     time.sleep(3)
+    st.experimental_rerun()
