@@ -48,16 +48,15 @@ def main():
     ma20 = data['MA20'].iloc[-1]
     ma60 = data['MA60'].iloc[-1]
 
-    # 🔥 這裡加強判斷：要三條線都存在才進行比較
-    if pd.notna(ma5) and pd.notna(ma20) and pd.notna(ma60):
-        if latest_price > ma5 and ma5 > ma20 and ma20 > ma60:
+    advice = "⏳ 數據初始化中，請稍候..."  # 預設訊息
+
+    if pd.notna(latest_price) and pd.notna(ma5) and pd.notna(ma20) and pd.notna(ma60):
+        if (latest_price > ma5) and (ma5 > ma20) and (ma20 > ma60):
             advice = "📈 **建議：做多 ✅**"
-        elif latest_price < ma5 and ma5 < ma20 and ma20 < ma60:
+        elif (latest_price < ma5) and (ma5 < ma20) and (ma20 < ma60):
             advice = "📉 **建議：做空 🔻**"
         else:
             advice = "⚖️ **建議：觀望中**"
-    else:
-        advice = "⏳ 數據初始化中，請稍候..."
 
     st.markdown(
         f"""
