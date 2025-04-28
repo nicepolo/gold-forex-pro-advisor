@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
 import pandas as pd
+import math
 
 # ─── 頁面 & 自動刷新設定 ─────────────────────────────
 st.set_page_config(page_title="黃金即時多空建議系統", layout="centered")
@@ -32,14 +33,18 @@ if data.empty or pd.isna(data["MA60"].iloc[-1]):
     st.warning("⏳ 資料載入中/尚未初始化，請稍候…")
     st.stop()
 
-# ─── 明確取出「最後一筆」單一 float ─────────────────
-lp   = data["Close"].iloc[-1]
-ma5  = data["MA5"].iloc[-1]
-ma20 = data["MA20"].iloc[-1]
-ma60 = data["MA60"].iloc[-1]
+# ─── 明確取出「最後一筆」並強制轉為純 float ─────────────
+try:
+    lp   = float(data["Close"].iloc[-1])
+    ma5  = float(data["MA5"].iloc[-1])
+    ma20 = float(data["MA20"].iloc[-1])
+    ma60 = float(data["MA60"].iloc[-1])
+except:
+    st.warning("⏳ 等待最新數據或轉換失敗…")
+    st.stop()
 
 # ─── 再次防呆：如果任一為 NaN ────────────────────────
-if any(pd.isna(v) for v in (lp, ma5, ma20, ma60)):
+if any(math.isnan(v) for v in (lp, ma5, ma20, ma60)):
     st.warning("⏳ 資料尚未完整，稍後再試…")
     st.stop()
 
