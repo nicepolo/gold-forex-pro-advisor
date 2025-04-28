@@ -9,7 +9,7 @@ st.title("💴 黃金即時多空建議系統（3秒自動更新＋趨勢翻轉�
 
 placeholder = st.empty()
 
-# 初始化 session_state 用來記錄上一次建議
+# 初始化 session_state
 if "last_advice" not in st.session_state:
     st.session_state.last_advice = None
 
@@ -34,29 +34,29 @@ def main():
 
         try:
             lp = data['Close'].iloc[-1]
-            ma5 = data['MA5'].iloc[-1]
-            ma20 = data['MA20'].iloc[-1]
-            ma60 = data['MA60'].iloc[-1]
+            ma5_v = data['MA5'].iloc[-1]
+            ma20_v = data['MA20'].iloc[-1]
+            ma60_v = data['MA60'].iloc[-1]
         except:
-            placeholder.warning("⏳ 正在等待新資料...")
+            placeholder.warning("⏳ 等待最新數據...")
             time.sleep(3)
             continue
 
-        # 防止單一NaN
+        # 檢查是否有NaN
         if any([
             pd.isna(lp),
-            pd.isna(ma5),
-            pd.isna(ma20),
-            pd.isna(ma60)
+            pd.isna(ma5_v),
+            pd.isna(ma20_v),
+            pd.isna(ma60_v)
         ]):
-            placeholder.warning("⏳ 資料不完整，稍後重試...")
+            placeholder.warning("⏳ 資料尚未完整，稍後再試...")
             time.sleep(3)
             continue
 
-        # 多空建議判斷
-        if lp > ma5 > ma20 > ma60:
+        # 多空建議判斷（這次用單一數字比較）
+        if lp > ma5_v > ma20_v > ma60_v:
             advice = "📈 做多"
-        elif lp < ma5 < ma20 < ma60:
+        elif lp < ma5_v < ma20_v < ma60_v:
             advice = "📉 做空"
         else:
             advice = "⚖️ 觀望中"
@@ -74,16 +74,16 @@ def main():
         with placeholder.container():
             st.metric("🌟 最新金價 (XAU/USD)", f"{lp:.2f}")
             st.markdown("### 📊 移動平均線參考")
-            st.markdown(f"- **MA5 :** {ma5:.2f}")
-            st.markdown(f"- **MA20:** {ma20:.2f}")
-            st.markdown(f"- **MA60:** {ma60:.2f}")
+            st.markdown(f"- **MA5 :** {ma5_v:.2f}")
+            st.markdown(f"- **MA20:** {ma20_v:.2f}")
+            st.markdown(f"- **MA60:** {ma60_v:.2f}")
             st.markdown("---")
             st.markdown(f"## 🚨 {advice}")
 
             if flip_alert:
                 st.markdown(f"## {flip_alert}")
 
-            st.caption("🕒 每3秒自動刷新一次")
+            st.caption("🕒 每3秒自動刷新一次數據")
 
         time.sleep(3)
 
