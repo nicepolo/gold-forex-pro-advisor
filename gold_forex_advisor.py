@@ -6,7 +6,7 @@ import time
 # 頁面設定
 st.set_page_config(page_title="黃金即時多空建議系統", page_icon="💹", layout="centered")
 
-# 背景顏色設定（漸層）
+# 背景漸層
 page_bg_img = """
 <style>
 [data-testid="stAppViewContainer"] {
@@ -40,7 +40,7 @@ def fetch_data():
     data['MA60'] = data['Close'].rolling(window=60).mean()
     return data
 
-# 主要運行區
+# 主運行區
 while True:
     data = fetch_data()
 
@@ -54,6 +54,7 @@ while True:
     ma20 = data['MA20'].iloc[-1]
     ma60 = data['MA60'].iloc[-1]
 
+    # 防呆：如果均線數值存在再判斷
     if pd.notna(ma5) and pd.notna(ma20) and pd.notna(ma60):
         if latest_price > ma5 > ma20 > ma60:
             advice = "📈 **建議：做多 ✅**"
@@ -64,11 +65,11 @@ while True:
     else:
         advice = "⏳ 數據初始化中，請稍候..."
 
-    # 顯示到頁面上
+    # 顯示到畫面
     with placeholder.container():
         st.markdown(
             f"""
-            <div style='background-color: #ffffffaa; padding: 20px; border-radius: 12px; animation: fadeIn 1s;'>
+            <div style='background-color: #ffffffdd; padding: 20px; border-radius: 12px; animation: fadeIn 1s;'>
                 <h2 style='text-align: center;'>🌟 最新金價 (XAU/USD)</h2>
                 <h1 style='text-align: center; color: #228B22;'>{latest_price:.2f} USD</h1>
                 <hr style='margin: 10px 0;'>
