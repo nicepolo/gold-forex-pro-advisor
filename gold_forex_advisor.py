@@ -55,9 +55,9 @@ def main():
     ma60 = data['MA60'].iloc[-1]
 
     if pd.notna(ma5) and pd.notna(ma20) and pd.notna(ma60):
-        if latest_price > ma5 > ma20 > ma60:
+        if latest_price > ma5 and ma5 > ma20 and ma20 > ma60:
             advice = "📈 **建議：做多 ✅**"
-        elif latest_price < ma5 < ma20 < ma60:
+        elif latest_price < ma5 and ma5 < ma20 and ma20 < ma60:
             advice = "📉 **建議：做空 🔻**"
         else:
             advice = "⚖️ **建議：觀望中**"
