@@ -3,10 +3,8 @@ from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
 import pandas as pd
 
-# 頁面設定
 st.set_page_config(page_title="黃金即時多空建議系統", page_icon="💹", layout="centered")
 
-# 背景設定（漸層）
 page_bg_img = """
 <style>
 [data-testid="stAppViewContainer"] {
@@ -19,10 +17,8 @@ h1, h2, h3, h4, h5, h6, p {
 """
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# 自動刷新（每3秒）
 st_autorefresh(interval=3000, limit=None, key="auto-refresh")
 
-# 標題區
 st.markdown(
     """
     <div style='text-align: center; padding: 10px; background-color: #fff8dc; border-radius: 12px;'>
@@ -33,7 +29,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 抓資料
 def fetch_data():
     data = yf.download('GC=F', period='1d', interval='1m', progress=False)
     data['MA5'] = data['Close'].rolling(window=5).mean()
@@ -41,7 +36,6 @@ def fetch_data():
     data['MA60'] = data['Close'].rolling(window=60).mean()
     return data
 
-# 畫面顯示
 def main():
     data = fetch_data()
 
@@ -54,6 +48,7 @@ def main():
     ma20 = data['MA20'].iloc[-1]
     ma60 = data['MA60'].iloc[-1]
 
+    # 🔥 這裡加強判斷：要三條線都存在才進行比較
     if pd.notna(ma5) and pd.notna(ma20) and pd.notna(ma60):
         if latest_price > ma5 and ma5 > ma20 and ma20 > ma60:
             advice = "📈 **建議：做多 ✅**"
@@ -90,5 +85,4 @@ def main():
     )
     st.caption("⏱️ 每3秒自動刷新一次數據")
 
-# 執行
 main()
