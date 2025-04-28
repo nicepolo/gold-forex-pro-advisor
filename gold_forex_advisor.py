@@ -1,91 +1,71 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import yfinance as yf
 import pandas as pd
-import time
 
-# 頁面設定
-st.set_page_config(page_title="黃金即時多空建議系統（3秒刷新＋翻轉提醒）", layout="centered")
-st.title("💴 黃金即時多空建議系統（3秒自動更新＋趨勢翻轉提醒）")
+# ─── 頁面 & 自動刷新設定 ─────────────────────────────
+st.set_page_config(page_title="黃金即時多空建議系統", layout="centered")
+st.title("💴 黃金即時多空建議系統 （3秒自動更新＋趨勢翻轉提醒）")
 
-placeholder = st.empty()
+# 每 3000 ms 自動重新執行整個腳本
+st_autorefresh(interval=3000, limit=None, key="datarefresh")
 
-# 初始化 session_state
+# ─── 用來記錄上一次建議的 Session State ────────────
 if "last_advice" not in st.session_state:
     st.session_state.last_advice = None
 
+# ─── 抓資料 & 計算 MA ───────────────────────────────
+@st.cache_data(ttl=60)
 def fetch_data():
-    try:
-        data = yf.download('GC=F', period='1d', interval='1m', progress=False)
-        data['MA5'] = data['Close'].rolling(window=5).mean()
-        data['MA20'] = data['Close'].rolling(window=20).mean()
-        data['MA60'] = data['Close'].rolling(window=60).mean()
-        return data
-    except:
-        return pd.DataFrame()
+    df = yf.download("GC=F", period="1d", interval="1m", progress=False)
+    if df.empty:
+        return df
+    df["MA5"]  = df["Close"].rolling(5).mean()
+    df["MA20"] = df["Close"].rolling(20).mean()
+    df["MA60"] = df["Close"].rolling(60).mean()
+    return df
 
-def main():
-    while True:
-        data = fetch_data()
+data = fetch_data()
 
-        if data.empty:
-            placeholder.warning("⏳ 資料載入中，請稍候...")
-            time.sleep(3)
-            continue
+# ─── 資料尚未準備好 ─────────────────────────────────
+if data.empty or data["MA60"].isna().iat[-1]:
+    st.warning("⏳ 資料載入中/尚未初始化，請稍候…")
+    st.stop()
 
-        try:
-            lp = data['Close'].iloc[-1]
-            ma5_v = data['MA5'].iloc[-1]
-            ma20_v = data['MA20'].iloc[-1]
-            ma60_v = data['MA60'].iloc[-1]
-        except:
-            placeholder.warning("⏳ 等待最新數據...")
-            time.sleep(3)
-            continue
+# ─── 明確取出「最後一筆」單一 float ─────────────────
+lp     = data["Close"].iat[-1]
+ma5    = data["MA5"].iat[-1]
+ma20   = data["MA20"].iat[-1]
+ma60   = data["MA60"].iat[-1]
 
-        # 檢查NaN
-        if any([
-            pd.isna(lp),
-            pd.isna(ma5_v),
-            pd.isna(ma20_v),
-            pd.isna(ma60_v)
-        ]):
-            placeholder.warning("⏳ 資料尚未完整，稍後再試...")
-            time.sleep(3)
-            continue
+# ─── 再次防呆：如果任一為 NaN ────────────────────────
+if any(pd.isna(v) for v in (lp, ma5, ma20, ma60)):
+    st.warning("⏳ 資料尚未完整，稍後再試…")
+    st.stop()
 
-        # 多空建議判斷（這次正確使用單一數字比較）
-        if lp > ma5_v > ma20_v > ma60_v:
-            advice = "📈 做多"
-        elif lp < ma5_v < ma20_v < ma60_v:
-            advice = "📉 做空"
-        else:
-            advice = "⚖️ 觀望中"
+# ─── 多空/觀望 邏輯 ─────────────────────────────────
+if lp > ma5 > ma20 > ma60:
+    advice = "📈 做多"
+elif lp < ma5 < ma20 < ma60:
+    advice = "📉 做空"
+else:
+    advice = "⚖️ 觀望中"
 
-        # 趨勢翻轉提醒
-        flip_alert = ""
-        if st.session_state.last_advice and (st.session_state.last_advice != advice):
-            if ("做多" in st.session_state.last_advice and "做空" in advice) or \
-               ("做空" in st.session_state.last_advice and "做多" in advice):
-                flip_alert = "⚡ **趨勢翻轉提醒！**"
+# ─── 趨勢翻轉提醒 ───────────────────────────────────
+flip_alert = ""
+last = st.session_state.last_advice
+if last and last != advice:
+    if ("做多" in last and "做空" in advice) or ("做空" in last and "做多" in advice):
+        flip_alert = "⚡ **趨勢翻轉提醒！**"
+st.session_state.last_advice = advice
 
-        st.session_state.last_advice = advice
-
-        # 畫面顯示
-        with placeholder.container():
-            st.metric("🌟 最新金價 (XAU/USD)", f"{lp:.2f}")
-            st.markdown("### 📊 移動平均線參考")
-            st.markdown(f"- **MA5 :** {ma5_v:.2f}")
-            st.markdown(f"- **MA20:** {ma20_v:.2f}")
-            st.markdown(f"- **MA60:** {ma60_v:.2f}")
-            st.markdown("---")
-            st.markdown(f"## 🚨 {advice}")
-
-            if flip_alert:
-                st.markdown(f"## {flip_alert}")
-
-            st.caption("🕒 每3秒自動刷新一次數據")
-
-        time.sleep(3)
-
-if __name__ == "__main__":
-    main()
+# ─── 顯示畫面 ───────────────────────────────────────
+st.metric("🌟 最新金價 (XAU/USD)", f"{lp:.2f} USD")
+st.markdown("### 📊 移動平均線參考")
+st.markdown(f"- MA5：**{ma5:.2f}**")
+st.markdown(f"- MA20：**{ma20:.2f}**")
+st.markdown(f"- MA60：**{ma60:.2f}**")
+st.markdown("---")
+st.markdown(f"## 🚨 {advice}")
+if flip_alert:
+    st.markdown(f"### {flip_alert}")
