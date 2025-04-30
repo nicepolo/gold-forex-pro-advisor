@@ -5,7 +5,14 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 
-# ─── 注入自訂 CSS (圓角、陰影等微調) ─────────────────────────
+# ─── 最先執行：Page config & Title ─────────────────────────
+st.set_page_config(
+    page_title="XAU/USD 全功能儀表板",
+    layout="wide"
+)
+st.title("💴 XAU/USD 全功能儀表板")
+
+# ─── 接著才注入自訂 CSS (圓角、陰影等微調) ─────────────────────────
 st.markdown(
     """
     <style>
@@ -22,13 +29,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ─── 頁面設定與主題 ───────────────────────────────────
-st.set_page_config(
-    page_title="XAU/USD 全功能儀表板",
-    layout="wide"
-)
-st.title("💴 XAU/USD 全功能儀表板")
-# 自動每 3 秒刷新
+# ─── 自動每 3 秒刷新 ───────────────────────────────
 st_autorefresh(interval=3000, limit=None, key="refresh")
 
 # ─── 側邊欄：控制面板 ─────────────────────────────────
@@ -81,3 +82,43 @@ if data.empty:
 ma5, ma20, ma60 = data["MA5"].iloc[-1], data["MA20"].iloc[-1], data["MA60"].iloc[-1]
 
 # ─── 多空建議邏輯 ────────────────────────────────────
+if lp > ma5 > ma20 > ma60:
+    advice = "📈 建議：做多"
+elif lp < ma5 < ma20 < ma60:
+    advice = "📉 建議：做空"
+else:
+    advice = "⚖️ 建議：觀望中"
+
+# ─── 版面配置：左側指標、右側圖表 ─────────────────────
+col1, col2 = st.columns([1,3], gap="large")
+
+with col1:
+    st.metric("🌟 最新金價", f"{lp:.2f} USD")
+    st.markdown("### 移動平均線")
+    st.markdown(f"- MA5：**{ma5:.2f}**")
+    st.markdown(f"- MA20：**{ma20:.2f}**")
+    st.markdown(f"- MA60：**{ma60:.2f}**")
+    st.markdown("---")
+    st.markdown(f"## 🚨 {advice}")
+
+with col2:
+    recent = data.tail(200).reset_index()
+    fig = go.Figure()
+    fig.add_trace(go.Candlestick(
+        x=recent["Datetime"], open=recent["Open"], high=recent["High"],
+        low=recent["Low"], close=recent["Close"], name="K 線"
+    ))
+    fig.add_trace(go.Scatter(x=recent["Datetime"], y=recent["MA5"],  mode="lines", name="MA5"))
+    fig.add_trace(go.Scatter(x=recent["Datetime"], y=recent["MA20"], mode="lines", name="MA20"))
+    fig.add_trace(go.Scatter(x=recent["Datetime"], y=recent["MA60"], mode="lines", name="MA60"))
+    fig.add_trace(go.Bar(
+        x=recent["Datetime"], y=recent["Volume"], name="成交量",
+        yaxis="y2", opacity=0.3
+    ))
+    fig.update_layout(
+        xaxis_rangeslider_visible=False,
+        yaxis2=dict(overlaying="y", side="right", title="Volume"),
+        template="plotly_dark" if dark_mode else "plotly_white",
+        margin=dict(l=20, r=20, t=30, b=20), height=600
+    )
+    st.plotly_chart(fig, use_container_width=True)
